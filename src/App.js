@@ -708,11 +708,32 @@ function Contact({ addRef }) {
         </div>
         <div className="social-row reveal mt-4" ref={addRef}>
           {[
-            { label: "LinkedIn", icon: "in", href: "https://linkedin.com/in/koushikbijili" },
-            { label: "GitHub", icon: "🐙", href: "https://github.com/koushikbijili" },
-            { label: "Email", icon: "✉", href: "mailto:koushikbijili48@gmail.com" },
+            {
+              label: "LinkedIn",
+              icon: "in",
+              href: "https://www.linkedin.com/in/koushikbijili",
+            },
+            {
+              label: "GitHub",
+              icon: "🐙",
+              href: "https://github.com/koushikbijili",
+            },
+            {
+              label: "Email",
+              icon: "✉",
+              href: "mailto:koushikbijili48@gmail.com",
+            },
           ].map((s) => (
-            <a key={s.label} href={s.href} className="social-btn" title={s.label}>{s.icon}</a>
+            <a
+              key={s.label}
+              href={s.href}
+              className="social-btn"
+              title={s.label}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {s.icon}
+            </a>
           ))}
         </div>
       </div>
