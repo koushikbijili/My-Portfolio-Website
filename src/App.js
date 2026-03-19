@@ -1,562 +1,429 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
-/* ─── BOOTSTRAP CDN ─── */
-const BootstrapLink = () => (
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.2/css/bootstrap.min.css" />
-);
+/*
+  THEME: "Deep Infrastructure"
+  Concept: Clean, professional dark portfolio with purposeful depth.
+  - Hero: smooth 3D perspective grid floor with mouse parallax
+  - Cards: subtle CSS 3D tilt on hover (smooth, not gimmicky)
+  - Sections: staggered entrance with depth (translateZ + opacity)
+  - Pipeline: clean animated flow diagram
+  - Colors: deep navy + electric violet accent — single palette, no rainbow
+  - Typography: clean hierarchy, generous whitespace
+*/
 
-/* ─── STYLES ─── */
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+const V  = "#7c3aed";          // violet-700 — primary accent
+const V1 = "rgba(124,58,237,0.1)";
+const V2 = "rgba(124,58,237,0.22)";
+const V3 = "rgba(124,58,237,0.45)";
+const G  = "#10b981";          // emerald — status green only
+const FG  = "#f1f5f9";
+const FG2 = "rgba(241,245,249,0.55)";
+const FG3 = "rgba(241,245,249,0.28)";
+const BG0 = "#06060e";
+const BG1 = "#0b0d17";
+const BG2 = "#0f1120";
+const BD  = "rgba(241,245,249,0.07)";
+const BDH = "rgba(124,58,237,0.4)";
+const SANS = "'Inter',system-ui,sans-serif";
+const MONO = "'JetBrains Mono',monospace";
 
-  :root {
-    --bg-deep:     #08090e;
-    --bg-card:     #11121a;
-    --bg-card-h:   #181928;
-    --accent:      #5eead4;
-    --accent-dim:  rgba(94,234,212,.13);
-    --accent-glow: rgba(94,234,212,.30);
-    --text-light:  #e2e0db;
-    --text-muted:  #6b6b7b;
-    --border:      rgba(94,234,212,.12);
-  }
+/* ── DATA ───────────────────────────────────────────────────── */
+const ROLES = ["Cloud Engineer","Junior DevOps Engineer","Platform Engineer","Infrastructure Engineer","Site Reliability Engineer (SRE)"];
 
-  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+const SKILLS = [
+  { cat:"Cloud Platform",        items:["EC2","S3","IAM","VPC","Route 53","Auto Scaling","Load Balancer","CloudWatch","SNS","ACM","NAT Gateway","CLI","CloudTrail","Launch Templates"] },
+  { cat:"DevOps & IaC",         items:["Terraform","Ansible","Jenkins","Docker","DockerHub","GitHub Actions","CI/CD Pipelines","Webhooks","Declarative Pipelines"] },
+  { cat:"Monitoring",           items:["Prometheus","Grafana","CloudWatch Alarms","SNS Alerts","Health Checks","CPU Metrics","Custom Dashboards"] },
+  { cat:"Networking & Security",items:["VPC Design","Subnets","HTTPS / ALB","ACM SSL","Cloudflare DNS","SSM Access","IAM Policies","Security Groups"] },
+  { cat:"Scripting & OS",       items:["Linux","Bash / Shell","Git","GitHub","Nginx","SSH Config","Cron Jobs"] },
+  { cat:"Core Concepts",        items:["High Availability","Auto Healing","Zero Downtime","IaC","State Locking","Containerisation","Version Control","Failure Simulation"] },
+];
 
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--bg-deep);
-    color: var(--text-light);
-    font-family: 'DM Sans', sans-serif;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* noise */
-  body::before {
-    content:''; position:fixed; inset:0; z-index:9999; pointer-events:none; opacity:.022;
-    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-
-  ::-webkit-scrollbar { width:5px; }
-  ::-webkit-scrollbar-track { background:var(--bg-deep); }
-  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-
-  /* ── NAV ── */
-  .pf-nav {
-    position:fixed; top:0; width:100%; z-index:100;
-    padding:1.3rem 0;
-    transition:background .4s, padding .4s, box-shadow .4s;
-  }
-  .pf-nav.scrolled {
-    background:rgba(8,9,14,.82);
-    backdrop-filter:blur(14px);
-    padding:.65rem 0;
-    box-shadow:0 1px 0 var(--border);
-  }
-  .pf-nav .logo {
-    font-family:'Playfair Display',serif;
-    font-size:1.25rem; color:var(--accent);
-    text-decoration:none; letter-spacing:.03em;
-  }
-  .pf-nav .nav-link {
-    color:var(--text-muted); font-size:.78rem;
-    letter-spacing:.14em; text-transform:uppercase;
-    text-decoration:none; padding:.4rem .65rem;
-    position:relative; transition:color .3s;
-  }
-  .pf-nav .nav-link::after {
-    content:''; position:absolute; bottom:0; left:50%;
-    transform:translateX(-50%);
-    width:0; height:1px; background:var(--accent);
-    transition:width .35s;
-  }
-  .pf-nav .nav-link:hover { color:var(--accent); }
-  .pf-nav .nav-link:hover::after { width:65%; }
-
-  /* hamburger */
-  .hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:.5rem; }
-  .hamburger span { display:block; width:22px; height:2px; background:var(--accent); border-radius:2px; transition:.3s; }
-  .hamburger.active span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
-  .hamburger.active span:nth-child(2) { opacity:0; }
-  .hamburger.active span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
-
-  /* mobile overlay */
-  .mobile-nav-overlay {
-    display:none; position:fixed; inset:0; z-index:99;
-    background:rgba(8,9,14,.96); backdrop-filter:blur(16px);
-    flex-direction:column; align-items:center; justify-content:center; gap:1.8rem;
-  }
-  .mobile-nav-overlay.open { display:flex; }
-  .mobile-nav-overlay .nav-link { font-size:1.05rem; letter-spacing:.22em; color:var(--text-light); text-decoration:none; transition:color .3s; }
-  .mobile-nav-overlay .nav-link:hover { color:var(--accent); }
-
-  /* ── HERO ── */
-  .pf-hero {
-    min-height:100vh;
-    display:flex; align-items:center; justify-content:center;
-    position:relative; padding:6rem 1rem 3rem;
-  }
-  .hero-glow {
-    position:absolute; width:560px; height:560px; border-radius:50%;
-    background:radial-gradient(circle, rgba(94,234,212,.07) 0%, transparent 70%);
-    top:50%; left:50%; transform:translate(-50%,-50%);
-    pointer-events:none;
-    animation:pulse 9s ease-in-out infinite;
-  }
-  @keyframes pulse {
-    0%,100% { transform:translate(-50%,-50%) scale(1); opacity:.6; }
-    50%     { transform:translate(-50%,-50%) scale(1.18); opacity:1; }
-  }
-  .hero-content { position:relative; z-index:1; text-align:center; }
-  .hero-tag {
-    display:inline-block; font-size:.72rem;
-    letter-spacing:.28em; text-transform:uppercase;
-    color:var(--accent); border:1px solid var(--border);
-    padding:.32rem 1rem; border-radius:50px;
-    margin-bottom:1.6rem;
-    animation:fadeDown .8s .2s both;
-  }
-  .hero-name {
-    font-family:'Playfair Display',serif;
-    font-size:clamp(2.6rem,6.5vw,5rem);
-    font-weight:700; line-height:1.1; color:var(--text-light);
-    animation:fadeUp .9s .35s both;
-  }
-  .hero-name em { font-style:italic; color:var(--accent); }
-  .hero-role {
-    margin-top:.8rem;
-    font-size:clamp(.95rem,2vw,1.15rem);
-    color:var(--accent); font-weight:400;
-    letter-spacing:.08em;
-    animation:fadeUp .9s .48s both;
-  }
-  .hero-subtitle {
-    margin-top:.9rem; font-size:.95rem;
-    color:var(--text-muted); font-weight:300;
-    max-width:500px; margin-left:auto; margin-right:auto;
-    line-height:1.7;
-    animation:fadeUp .9s .6s both;
-  }
-  .hero-cta {
-    margin-top:2.2rem;
-    display:flex; gap:.9rem; justify-content:center; flex-wrap:wrap;
-    animation:fadeUp .9s .72s both;
-  }
-
-  /* buttons */
-  .btn-primary-custom {
-    background:var(--accent); color:#08090e; border:none;
-    padding:.68rem 1.7rem; border-radius:50px;
-    font-size:.78rem; font-weight:500;
-    letter-spacing:.12em; text-transform:uppercase;
-    text-decoration:none; cursor:pointer;
-    transition:box-shadow .3s, transform .25s;
-  }
-  .btn-primary-custom:hover { box-shadow:0 0 22px var(--accent-glow); transform:translateY(-2px); }
-  .btn-outline-custom {
-    background:transparent; color:var(--text-light);
-    border:1px solid var(--border);
-    padding:.68rem 1.7rem; border-radius:50px;
-    font-size:.78rem; font-weight:500;
-    letter-spacing:.12em; text-transform:uppercase;
-    text-decoration:none; cursor:pointer;
-    transition:border-color .3s, color .3s, transform .25s;
-  }
-  .btn-outline-custom:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-2px); }
-
-  /* scroll hint */
-  .scroll-hint {
-    position:absolute; bottom:2rem; left:50%;
-    transform:translateX(-50%);
-    display:flex; flex-direction:column; align-items:center; gap:.35rem;
-    color:var(--text-muted); font-size:.68rem;
-    letter-spacing:.18em; text-transform:uppercase;
-    animation:fadeUp 1s .95s both;
-  }
-  .scroll-hint .line {
-    width:1px; height:0;
-    background:linear-gradient(to bottom, var(--accent), transparent);
-    animation:scrollLine 2s ease-in-out infinite;
-  }
-  @keyframes scrollLine { 0%{height:0;opacity:1} 100%{height:34px;opacity:0} }
-
-  /* ── SECTION COMMONS ── */
-  .pf-section { padding:6.5rem 0; }
-  .section-label { font-size:.7rem; letter-spacing:.32em; text-transform:uppercase; color:var(--accent); margin-bottom:.5rem; }
-  .section-title { font-family:'Playfair Display',serif; font-size:clamp(1.7rem,3.8vw,2.4rem); font-weight:700; color:var(--text-light); margin-bottom:.8rem; }
-  .section-desc { color:var(--text-muted); font-size:.9rem; font-weight:300; max-width:500px; line-height:1.75; }
-  .accent-line { width:38px; height:2px; background:var(--accent); margin-bottom:1rem; }
-
-  /* reveal */
-  .reveal { opacity:0; transform:translateY(30px); transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
-  .reveal.visible { opacity:1; transform:translateY(0); }
-
-  /* ── ABOUT ── */
-  .about-ring {
-    width:160px; height:160px; border-radius:50%;
-    position:relative; margin:0 auto 1.8rem;
-  }
-  .about-ring-inner {
-    position:absolute; inset:3px; border-radius:50%;
-    background:var(--bg-card-h);
-    display:flex; align-items:center; justify-content:center;
-    font-size:3.2rem; z-index:1;
-  }
-  .about-ring-border {
-    position:absolute; inset:0; border-radius:50%;
-    background:conic-gradient(var(--accent), transparent 70%, var(--accent));
-    animation:spin 5s linear infinite;
-  }
-  @keyframes spin { to{transform:rotate(360deg)} }
-
-  .stat-row { display:flex; justify-content:center; gap:2rem; flex-wrap:wrap; margin-top:.6rem; }
-  .stat-card { text-align:center; padding:1rem .6rem; }
-  .stat-number { font-family:'Playfair Display',serif; font-size:1.7rem; color:var(--accent); font-weight:700; }
-  .stat-label { font-size:.7rem; color:var(--text-muted); letter-spacing:.1em; text-transform:uppercase; margin-top:.2rem; }
-
-  /* ── SKILLS ── */
-  .skill-card {
-    background:var(--bg-card); border:1px solid var(--border);
-    border-radius:14px; padding:1.6rem 1.2rem;
-    transition:transform .3s, border-color .3s, box-shadow .3s;
-    height:100%;
-  }
-  .skill-card:hover { transform:translateY(-4px); border-color:var(--accent); box-shadow:0 8px 28px rgba(94,234,212,.08); }
-  .skill-icon { font-size:1.5rem; margin-bottom:.6rem; }
-  .skill-card h5 { font-family:'Playfair Display',serif; color:var(--text-light); margin-bottom:.35rem; font-size:1rem; }
-  .skill-card p { color:var(--text-muted); font-size:.8rem; line-height:1.6; margin:0; }
-  .skill-tags { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.8rem; }
-  .skill-tag { background:var(--accent-dim); color:var(--accent); font-size:.68rem; padding:.22rem .6rem; border-radius:50px; letter-spacing:.04em; }
-
-  /* ── PROJECTS ── */
-  .project-card {
-    background:var(--bg-card); border:1px solid var(--border);
-    border-radius:16px; overflow:hidden;
-    transition:transform .35s, box-shadow .35s;
-    display:flex; flex-direction:column; height:100%;
-  }
-  .project-card:hover { transform:translateY(-5px); box-shadow:0 14px 40px rgba(0,0,0,.28); }
-  .project-img {
-    height:160px; background:var(--bg-card-h);
-    display:flex; align-items:center; justify-content:center;
-    font-size:2.4rem; position:relative; overflow:hidden;
-  }
-  .project-img::after { content:''; position:absolute; inset:0; background:linear-gradient(to bottom, transparent 40%, var(--bg-card)); }
-  .project-body { padding:1.3rem; flex:1; display:flex; flex-direction:column; }
-  .project-body h5 { font-family:'Playfair Display',serif; color:var(--text-light); font-size:1rem; margin-bottom:.3rem; }
-  .project-body p { color:var(--text-muted); font-size:.8rem; line-height:1.6; margin:0; flex:1; }
-  .project-links { margin-top:.9rem; display:flex; gap:.7rem; }
-  .project-link { color:var(--accent); font-size:.72rem; letter-spacing:.07em; text-transform:uppercase; text-decoration:none; border-bottom:1px solid transparent; transition:border-color .3s; cursor:pointer; }
-  .project-link:hover { border-color:var(--accent); }
-
-  /* filter pills */
-  .filter-pill {
-    background:var(--bg-card); color:var(--text-muted);
-    border:1px solid var(--border);
-    border-radius:50px; padding:.3rem .85rem;
-    font-size:.72rem; letter-spacing:.07em;
-    text-transform:uppercase; cursor:pointer;
-    transition:all .25s; font-family:'DM Sans',sans-serif;
-  }
-  .filter-pill:hover { border-color:var(--accent); color:var(--accent); }
-  .filter-pill.active { background:var(--accent); color:#08090e; border-color:var(--accent); }
-
-  /* ── EXPERIENCE / TIMELINE ── */
-  .timeline { position:relative; padding-left:2rem; }
-  .timeline::before { content:''; position:absolute; left:6px; top:0; bottom:0; width:1px; background:linear-gradient(to bottom, var(--accent), transparent); }
-  .timeline-item { position:relative; margin-bottom:2.2rem; }
-  .timeline-dot {
-    position:absolute; left:-2rem; top:.38rem;
-    width:14px; height:14px; border-radius:50%;
-    background:var(--bg-deep); border:2px solid var(--accent);
-    transition:box-shadow .3s;
-  }
-  .timeline-item:hover .timeline-dot { box-shadow:0 0 10px var(--accent-glow); }
-  .timeline-date { font-size:.7rem; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:.25rem; }
-  .timeline-title { font-family:'Playfair Display',serif; color:var(--text-light); font-size:1.05rem; margin-bottom:.1rem; }
-  .timeline-company { color:var(--text-muted); font-size:.8rem; margin-bottom:.4rem; }
-  .timeline-desc { color:var(--text-muted); font-size:.8rem; line-height:1.7; }
-  .timeline-desc li { margin-bottom:.28rem; padding-left:.3rem; }
-
-  /* ── CERTS ── */
-  .cert-card {
-    background:var(--bg-card); border:1px solid var(--border);
-    border-radius:14px; padding:1.4rem 1.5rem;
-    display:flex; align-items:center; justify-content:space-between;
-    gap:1rem; flex-wrap:wrap;
-    transition:transform .3s, border-color .3s;
-  }
-  .cert-card:hover { transform:translateY(-3px); border-color:var(--accent); }
-  .cert-card h6 { font-family:'Playfair Display',serif; color:var(--text-light); font-size:.95rem; margin:0; }
-  .cert-card p { color:var(--text-muted); font-size:.78rem; margin:0; }
-  .cert-link { color:var(--accent); font-size:.75rem; letter-spacing:.07em; text-transform:uppercase; text-decoration:none; border-bottom:1px solid transparent; transition:border-color .3s; white-space:nowrap; }
-  .cert-link:hover { border-color:var(--accent); }
-
-  /* ── CONTACT ── */
-  .contact-wrapper {
-    background:var(--bg-card); border:1px solid var(--border);
-    border-radius:20px; padding:3rem 2rem;
-    max-width:580px; margin:0 auto;
-    position:relative; overflow:hidden;
-  }
-  .contact-wrapper::before {
-    content:''; position:absolute; top:-70px; right:-70px;
-    width:210px; height:210px; border-radius:50%;
-    background:radial-gradient(circle, var(--accent-dim), transparent 70%);
-    pointer-events:none;
-  }
-  .contact-input {
-    width:100%; background:var(--bg-deep);
-    border:1px solid var(--border); border-radius:10px;
-    padding:.7rem .95rem; color:var(--text-light);
-    font-family:'DM Sans',sans-serif; font-size:.86rem;
-    margin-bottom:.9rem; transition:border-color .3s, box-shadow .3s; outline:none;
-  }
-  .contact-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
-  .contact-input::placeholder { color:var(--text-muted); }
-  textarea.contact-input { resize:vertical; min-height:100px; }
-  .success-toast {
-    background:var(--accent-dim); border:1px solid var(--accent);
-    border-radius:10px; padding:.6rem 1rem;
-    margin-bottom:1rem; color:var(--accent);
-    font-size:.82rem; text-align:center;
-  }
-
-  /* social */
-  .social-row { display:flex; gap:.8rem; justify-content:center; flex-wrap:wrap; margin-top:2rem; }
-  .social-btn {
-    width:40px; height:40px; border-radius:50%;
-    border:1px solid var(--border); background:var(--bg-card);
-    color:var(--text-muted); display:flex; align-items:center; justify-content:center;
-    text-decoration:none; font-size:.9rem;
-    transition:border-color .3s, color .3s, transform .25s, box-shadow .3s;
-  }
-  .social-btn:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-3px); box-shadow:0 4px 14px var(--accent-dim); }
-
-  /* ── FOOTER ── */
-  .pf-footer { padding:1.8rem 0; text-align:center; border-top:1px solid var(--border); }
-  .pf-footer p { color:var(--text-muted); font-size:.76rem; }
-  .pf-footer a { color:var(--accent); text-decoration:none; }
-  .pf-footer a:hover { text-decoration:underline; }
-
-  @keyframes fadeUp   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
-
-  /* responsive */
-  @media(max-width:768px){
-    .pf-nav .desktop-links{display:none!important;}
-    .hamburger{display:flex;}
-    .pf-hero{padding-top:5.5rem;}
-    .contact-wrapper{padding:2rem 1.1rem;}
-    .timeline{padding-left:1.5rem;}
-    .timeline::before{left:5px;}
-    .timeline-dot{left:-1.5rem;width:12px;height:12px;}
-    .cert-card{flex-direction:column;align-items:flex-start;}
-  }
-  @media(min-width:769px){
-    .hamburger{display:none!important;}
-  }
-`;
-
-/* ─── DATA ─── */
-const projects = [
+const PROJECTS = [
   {
-    emoji: "⚡", title: "React App Deployment – Nginx & HTTPS",
-    desc: "Deployed a React SPA on Ubuntu EC2 behind Nginx, wired Cloudflare + Certbot for 100 % HTTPS, and tuned configs for fast page loads and basic security.",
-    tags: ["React", "AWS EC2", "Nginx", "Cloudflare", "Certbot"]
+    n:"01", color: V,
+    title:"Production-Grade Cloud Infrastructure",
+    sub:"Terraform · ACM SSL · Cloudflare · S3 · DynamoDB",
+    github:"https://github.com/koushikbijili/aws-production-infrastructure-terraform.git",
+    desc:"Designed and deployed a scalable AWS infrastructure using Terraform, including secure networking, load balancing, and auto-scaling compute. The setup eliminates manual configuration by using infrastructure as code and ensures consistent, repeatable deployments.",
+    stack:["Terraform","VPC","ALB","ASG","ACM SSL","Cloudflare","S3","DynamoDB","NAT Gateway","SSM"],
+    arch:[["VPC Layer","Public/private subnets across AZs with NAT Gateway for secure outbound access."],["Load Balancer","ALB with ACM SSL — HTTP → HTTPS redirection enforced on all traffic."],["Compute","Auto Scaling Group in private subnets via Systems Manager — no SSH keys."],["State","S3 + DynamoDB remote state with locking preventing concurrent conflicts."]],
+    built:["VPC, subnets, IGW, NAT via Terraform modules","ALB HTTPS listener + HTTP→HTTPS redirect rules","ASG launch templates with health-check policies","SSM access eliminating SSH key pairs","Cloudflare DNS with SSL certificate validation","Remote state locking for team collaboration"],
   },
   {
-    emoji: "🏗️", title: "Infrastructure Automation – Terraform & Ansible",
-    desc: "Provisioned scalable AWS infra with Terraform and automated server config via Ansible playbooks, all version-controlled in VS Code.",
-    tags: ["Terraform", "Ansible", "AWS", "IaC"]
+    n:"02", color:"#0ea5e9",
+    title:"CI/CD Pipeline Automation",
+    sub:"Jenkins · Docker · DockerHub · Webhooks",
+    github:"https://github.com/koushikbijili/containerized-cicd-automation.git",
+    desc:"End-to-end automated pipeline that builds, tags, and deploys Dockerised applications on every code push — zero manual steps from commit to running container.",
+    stack:["Jenkins","Docker","DockerHub","GitHub Webhooks","Shell Scripting","Declarative Pipeline"],
+    arch:[["Trigger","GitHub webhook fires on every push, instantly starting the pipeline."],["Build","Jenkins builds + tags a Docker image with the build number."],["Registry","Image pushed to DockerHub via Jenkins-stored secrets."],["Deploy","Latest image pulled and deployed as a running container."]],
+    built:["Multi-stage declarative Jenkins pipeline (Build → Push → Deploy)","DockerHub credentials secured as Jenkins secrets","Webhook trigger eliminating manual runs","Build-number image tagging for traceability","Consistent containerised deployment across environments","All manual steps eliminated"],
   },
   {
-    emoji: "📊", title: "Infra Monitoring – Prometheus & Grafana",
-    desc: "Set up system & CI/CD monitoring with Prometheus + Node Exporter, then built Grafana dashboards for real-time server and Jenkins metrics.",
-    tags: ["Prometheus", "Grafana", "Node Exporter", "Jenkins"]
+    n:"03", color:"#10b981",
+    title:"Self-Healing Infrastructure",
+    sub:"EC2 · ASG · ALB · CloudWatch · SNS · Nginx",
+    github:"https://github.com/koushikbijili/Self-Healing-Infrastructure-with-Failure-Simulation.git",
+    desc:"Highly available infrastructure that auto-detects failures, terminates unhealthy nodes, launches replacements, and reroutes traffic — validated through deliberate failure simulation.",
+    stack:["EC2","ASG","ALB","CloudWatch","SNS","Launch Templates","Nginx","Linux"],
+    arch:[["Load Balancer","ALB routes away from unhealthy instances within seconds."],["Auto Scaling","ASG with CPU-based scale-out/in trigger policies."],["Monitoring","CloudWatch alarms on CPU, health status, unhealthy host counts."],["Alerting","SNS real-time email alerts on failure, recovery, and scaling."]],
+    built:["Multi-AZ EC2 + ASG + ALB + Launch Templates","ALB health checks for auto instance removal","CloudWatch alarms linked to ASG scaling policies","SNS email subscriptions for all infra events","Force-stop simulation validating self-healing","Zero-downtime rerouting confirmed during failures"],
   },
 ];
 
-const skills = [
-  { icon: "☁️", title: "Cloud Platforms", desc: "Architecting and managing cloud resources at scale.", tags: ["AWS EC2", "S3", "IAM", "Auto Scaling", "Route 53", "CloudWatch"] },
-  { icon: "🔄", title: "DevOps & CI/CD", desc: "End-to-end pipeline design from code commit to production.", tags: ["Jenkins", "Docker", "GitHub", "CI/CD"] },
-  { icon: "🏗️", title: "Infrastructure as Code", desc: "Declarative infra provisioning and config management.", tags: ["Terraform", "Ansible", "Prometheus", "Grafana"] },
-  { icon: "🐚", title: "Scripting & OS", desc: "Automating workflows and managing Linux environments.", tags: ["Linux", "Bash", "Shell Scripting"] },
-  { icon: "📦", title: "Containerisation", desc: "Building, shipping, and orchestrating containerised apps.", tags: ["Docker", "Container Ops"] },
-  { icon: "📈", title: "Monitoring & Observability", desc: "Visibility into system health, CI pipelines, and performance.", tags: ["Prometheus", "Grafana", "Node Exporter"] },
+const PHILOSOPHY = [
+  { icon:"⚡", title:"Automate Where It Matters", desc:"I focus on automating repetitive tasks to reduce manual errors and improve consistency, especially in deployments and infrastructure setup." },
+  { icon:"📐", title:"Build for Scale", desc:"Systems are designed with scalability in mind, using load balancing and modular infrastructure to support future growth." },
+  { icon:"🔭", title:"Observability and Monitoring", desc:"Metrics, logs, and alerts aren't optional. You can't fix what you can't see. Monitoring is part of the build, not an add-on." },
+  { icon:"💥", title:"Design for Failure", desc:"Failures are inevitable. Design systems that detect, recover, and self-heal automatically — then prove it through deliberate failure simulation." },
+  { icon:"🔒", title:"Security by Default", desc:"Integrate security practices into every stage of the development lifecycle. Security is not an afterthought." },
+  { icon:"🔁", title:"Continuous Improvement", desc:"Ship, measure, improve. Every deployment is reproducible, reversible, and traceable. Version control is non-negotiable." },
 ];
 
-const experience = [
-  {
-    date: "Sep 2025 – Present",
-    title: "Cloud & DevOps Intern",
-    company: "Visys Cloud Technologies · Hyderabad, Telangana",
-    bullets: [
-      "Designed & automated CI/CD pipelines with Jenkins + Docker, cutting manual deployment steps by 60 %.",
-      "Provisioned and managed AWS infrastructure — EC2, S3, IAM, Route 53, Load Balancers, Auto Scaling.",
-      "Built Docker-based containerised apps ensuring environment consistency across dev, staging, and prod.",
-      "Configured Prometheus & Grafana dashboards for real-time system and pipeline monitoring.",
-    ]
-  },
-];
-
-const education = {
-  college: "MVSR Engineering College, Hyderabad",
-  degree: "Bachelor of Engineering – Automobile Engineering",
-  cgpa: "7.26",
-  duration: "Oct 2020 – Jun 2024",
-};
-
-const certs = [
-  { title: "Oracle Certified Foundations Associate", issuer: "Oracle" },
-  { title: "Solutions Architecture – Job Simulation", issuer: "Virtual Experience" },
-];
-
-/* ─── HOOK ─── */
-function useReveal() {
-  const refs = useRef([]);
+/* ── HOOKS ──────────────────────────────────────────────────── */
+function useInView(t=0.08) {
+  const ref = useRef(null);
+  const [v, setV] = useState(false);
   useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add("visible"); }),
-      { threshold: 0.13 }
-    );
-    refs.current.forEach((el) => el && obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-  const addRef = (el) => { if (el && !refs.current.includes(el)) refs.current.push(el); };
-  return addRef;
+    const o = new IntersectionObserver(([e]) => setV(e.isIntersecting), { threshold:t });
+    if (ref.current) o.observe(ref.current);
+    return () => o.disconnect();
+  }, [t]);
+  return [ref, v];
 }
 
-/* ─── NAV ─── */
-function Navbar({ menuOpen, setMenuOpen }) {
-  const [scrolled, setScrolled] = useState(false);
+function useMouse() {
+  const [m, setM] = useState({x:0,y:0});
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
+    const h = e => setM({ x:(e.clientX/window.innerWidth-0.5)*2, y:(e.clientY/window.innerHeight-0.5)*2 });
+    window.addEventListener("mousemove", h, {passive:true});
+    return () => window.removeEventListener("mousemove", h);
   }, []);
-  const links = ["About", "Skills", "Projects", "Experience", "Contact"];
-  const go = (id) => { document.getElementById(id.toLowerCase())?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
+  return m;
+}
 
+/* ── TYPEWRITER ─────────────────────────────────────────────── */
+function Typer() {
+  const [txt,setTxt]=useState(""); const [ri,setRi]=useState(0); const [ph,setPh]=useState("t");
+  useEffect(()=>{
+    const w=ROLES[ri%ROLES.length]; let t;
+    if(ph==="t"){ if(txt.length<w.length) t=setTimeout(()=>setTxt(w.slice(0,txt.length+1)),55); else t=setTimeout(()=>setPh("p"),2000); }
+    else if(ph==="p") t=setTimeout(()=>setPh("d"),60);
+    else { if(txt.length>0) t=setTimeout(()=>setTxt(s=>s.slice(0,-1)),28); else{setRi(i=>i+1);setPh("t");} }
+    return()=>clearTimeout(t);
+  },[txt,ph,ri]);
+  return <span style={{color:V,fontWeight:600}}>{txt}<span style={{animation:"blink .9s step-end infinite",borderLeft:`1.5px solid ${V}`,marginLeft:1}}> </span></span>;
+}
+
+/* ── 3D TILT CARD ───────────────────────────────────────────── */
+function Tilt({children, style={}, depth=10, glow=V1}) {
+  const r=useRef(null);
+  const onMove=useCallback(e=>{
+    const el=r.current; if(!el) return;
+    const b=el.getBoundingClientRect();
+    const x=((e.clientX-b.left)/b.width-0.5)*2;
+    const y=((e.clientY-b.top)/b.height-0.5)*2;
+    el.style.transform=`perspective(900px) rotateX(${-y*depth}deg) rotateY(${x*depth}deg) translateZ(8px)`;
+    el.style.boxShadow=`0 24px 60px ${glow}, 0 0 0 1px ${BDH}`;
+  },[depth,glow]);
+  const onLeave=useCallback(()=>{
+    const el=r.current; if(!el) return;
+    el.style.transform="perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0px)";
+    el.style.boxShadow=`0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px ${BD}`;
+  },[]);
   return (
-    <>
-      <nav className={`pf-nav ${scrolled ? "scrolled" : ""}`}>
-        <div className="container d-flex align-items-center justify-content-between">
-        <button className="logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>KB</button>
-          {links.map((l) => (
-            <button key={l} className="nav-link" onClick={() => go(l)}>
-              {l}
-            </button>
-          ))}
+    <div ref={r} onMouseMove={onMove} onMouseLeave={onLeave}
+      style={{transition:"transform 0.18s ease, box-shadow 0.3s ease", transformStyle:"preserve-3d", willChange:"transform", boxShadow:`0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px ${BD}`, ...style}}>
+      {children}
+    </div>
+  );
+}
+
+/* ── REVEAL ─────────────────────────────────────────────────── */
+function Reveal({children, delay=0, dir="up"}) {
+  const [ref,v]=useInView();
+  const init = dir==="left" ? "translateX(-32px)" : dir==="right" ? "translateX(32px)" : "translateY(28px)";
+  return (
+    <div ref={ref} style={{opacity:v?1:0, transform:v?"none":init, transition:`opacity .7s ease ${delay}ms, transform .7s ease ${delay}ms`}}>
+      {children}
+    </div>
+  );
+}
+
+/* ── SECTION LABEL ──────────────────────────────────────────── */
+function SL({tag,title}) {
+  return (
+    <div style={{marginBottom:"3rem"}}>
+      <p style={{fontFamily:MONO,fontSize:"0.62rem",color:V,letterSpacing:"0.2em",textTransform:"uppercase",margin:"0 0 0.5rem",opacity:.85}}>{tag}</p>
+      <h2 style={{fontFamily:SANS,fontSize:"clamp(1.35rem,3vw,1.85rem)",fontWeight:700,color:FG,margin:0,letterSpacing:"-0.025em",lineHeight:1.15}}>{title}</h2>
+    </div>
+  );
+}
+
+/* ── PIPELINE ANIMATION ─────────────────────────────────────── */
+function Pipeline({ steps, color=V }) {
+  const [step,setStep]=useState(0);
+  const c1=color, c1bg=color+"18", c1glow=color+"40";
+  useEffect(()=>{ setStep(0); const t=setInterval(()=>setStep(s=>(s+1)%steps.length),950); return()=>clearInterval(t); },[steps]);
+  return (
+    <div style={{padding:"1.4rem 1.8rem",overflowX:"auto"}}>
+      <div style={{display:"flex",alignItems:"center",width:"max-content",margin:"0 auto",gap:0}}>
+        {steps.map((s,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center"}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:7}}>
+              <div style={{width:40,height:40,borderRadius:"50%",border:`1.5px solid ${step>=i?c1:BD}`,background:step>=i?c1bg:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .4s ease",boxShadow:step===i?`0 0 18px ${c1glow}`:"none",position:"relative"}}>
+                {step>i && <span style={{color:c1,fontSize:13,fontWeight:700}}>✓</span>}
+                {step===i && <div style={{width:9,height:9,borderRadius:"50%",background:c1,animation:"pulse .8s ease-in-out infinite"}}/>}
+                {step<i && <div style={{width:7,height:7,borderRadius:"50%",background:FG3}}/>}
+                {step===i && <div style={{position:"absolute",inset:-5,borderRadius:"50%",border:`1px solid ${c1}`,animation:"ring 1s ease-out infinite"}}/>}
+              </div>
+              <span style={{fontFamily:MONO,fontSize:"0.55rem",color:step>=i?FG2:FG3,letterSpacing:"0.03em",textAlign:"center",maxWidth:62,lineHeight:1.35}}>{s}</span>
+            </div>
+            {i<steps.length-1&&(
+              <div style={{width:44,height:1.5,background:BD,margin:"0 0 18px",position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",inset:0,background:c1,transform:`scaleX(${step>i?1:0})`,transformOrigin:"left",transition:"transform .4s ease"}}/>
+                {step===i&&<div style={{position:"absolute",top:"50%",transform:"translateY(-50%)",width:5,height:5,borderRadius:"50%",background:c1,animation:"packet .95s linear infinite",boxShadow:`0 0 7px ${c1}`}}/>}
+              </div>
+            )}
           </div>
-          <div className={`hamburger ${menuOpen ? "active" : ""}`} onClick={() => setMenuOpen(!menuOpen)}>
-            <span /><span /><span />
-          </div>
-      </nav>
-      {menuOpen && (
-        <div className="mobile-nav-overlay open">
-          <div className="hamburger active" style={{ position: "absolute", top: "1.1rem", right: "1.4rem" }} onClick={() => setMenuOpen(false)}>
-            <span /><span /><span />
-          </div>
-          {links.map((l) => <a key={l} href="#" className="nav-link" onClick={(e) => { e.preventDefault(); go(l); }}>{l}</a>)}
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── HERO GRID FLOOR ────────────────────────────────────────── */
+function GridFloor({mouse}) {
+  return (
+    <div style={{
+      position:"absolute",bottom:0,left:0,right:0,height:"55%",
+      background:`
+        linear-gradient(transparent 0%, rgba(124,58,237,0.03) 100%),
+        repeating-linear-gradient(90deg, ${BD} 0px, transparent 1px, transparent 60px, ${BD} 61px),
+        repeating-linear-gradient(0deg,  ${BD} 0px, transparent 1px, transparent 60px, ${BD} 61px)
+      `,
+      transform:`perspective(700px) rotateX(55deg) translateY(${mouse.y*6}px)`,
+      transformOrigin:"50% 100%",
+      pointerEvents:"none",
+      maskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 70%, transparent 100%)",
+    }}/>
+  );
+}
+
+/* ── NAVBAR ─────────────────────────────────────────────────── */
+function Nav({active,setActive}) {
+  const [scrolled,setScrolled]=useState(false);
+  const [open,setOpen]=useState(false);
+  const links=["Home","About","Philosophy","Skills","Experience","Projects","Certifications","Contact"];
+  useEffect(()=>{const h=()=>setScrolled(window.scrollY>40);window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[]);
+  const go=id=>{document.getElementById(id.toLowerCase())?.scrollIntoView({behavior:"smooth"});setActive(id);setOpen(false);};
+  return(
+    <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:200,height:58,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 clamp(1.5rem,4vw,3rem)",background:scrolled?"rgba(6,6,14,0.85)":"transparent",backdropFilter:scrolled?"blur(20px)":"none",borderBottom:scrolled?`1px solid ${BD}`:"none",transition:"all .4s"}}>
+      <div style={{fontFamily:MONO,fontSize:".9rem",fontWeight:700,color:FG,letterSpacing:"-.01em"}}>
+        KB<span style={{color:V}}>.</span>
+      </div>
+      <div className="dnav" style={{display:"flex",gap:"2rem"}}>
+        {links.map(l=>(
+          <button key={l} onClick={()=>go(l)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:SANS,fontSize:".78rem",fontWeight:500,color:active===l?FG:FG3,transition:"color .25s",padding:0,letterSpacing:"-.01em"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+      <a href="mailto:koushikbijili48@gmail.com" className="dnav"
+        style={{fontFamily:SANS,fontSize:".75rem",fontWeight:600,color:"#fff",background:V,textDecoration:"none",padding:"7px 18px",borderRadius:7,transition:"all .25s",letterSpacing:"-.01em"}}
+        onMouseEnter={e=>{e.currentTarget.style.opacity=".85";e.currentTarget.style.transform="translateY(-1px)";}}
+        onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>
+        Hire Me
+      </a>
+      <button className="ham" onClick={()=>setOpen(o=>!o)} style={{display:"none",background:"none",border:"none",cursor:"pointer",color:FG,fontSize:"1.2rem",padding:4}}>{open?"✕":"☰"}</button>
+      {open&&(
+        <div style={{position:"fixed",top:58,left:0,right:0,bottom:0,background:"rgba(6,6,14,.97)",backdropFilter:"blur(24px)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"2.5rem",zIndex:199}}>
+          {links.map(l=><button key={l} onClick={()=>go(l)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:SANS,fontSize:"1.1rem",fontWeight:500,color:active===l?V:FG,letterSpacing:"-.02em"}}>{l}</button>)}
         </div>
       )}
-    </>
+    </nav>
   );
 }
 
-/* ─── HERO ─── */
-function Hero() {
-  return (
-    <section className="pf-hero" id="home">
-      <div className="hero-glow" />
-      <div className="hero-content">
-        <div className="hero-tag">Welcome to my portfolio</div>
-        <h1 className="hero-name">Hi, I'm <em>Koushik Bijili</em></h1>
-        <div className="hero-role">Cloud & DevOps Engineer</div>
-        <p className="hero-subtitle">Hands-on with AWS, CI/CD, Docker, and IaC. I build reliable, automated cloud infrastructure and keep systems observable end-to-end.</p>
-        <div className="hero-cta">
-          <button className="btn-primary-custom" onClick={() => document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" })}>
-            View Projects
-          </button>
+/* ── HERO ───────────────────────────────────────────────────── */
+function Hero({mouse}) {
+  return(
+    <section id="home" style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden",background:`radial-gradient(ellipse 100% 70% at 50% -10%, rgba(124,58,237,.13) 0%, transparent 65%), ${BG0}`,padding:"7rem 2rem 5rem"}}>
 
-          <button className="btn-outline-custom" onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}>
-            Contact Me
-          </button>
+      <GridFloor mouse={mouse}/>
 
+      {/* Top-left corner accent */}
+      <div style={{position:"absolute",top:0,left:0,width:1,height:"40%",background:`linear-gradient(${V3},transparent)`,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:0,left:0,width:"20%",height:1,background:`linear-gradient(90deg,${V3},transparent)`,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:0,right:0,width:1,height:"25%",background:`linear-gradient(${BD},transparent)`,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:0,right:0,width:"15%",height:1,background:`linear-gradient(270deg,${BD},transparent)`,pointerEvents:"none"}}/>
+
+      {/* Content - shifts slightly with mouse for parallax feel */}
+      <div style={{
+        position:"relative",zIndex:2,textAlign:"center",maxWidth:720,width:"100%",
+        transform:`translate(${mouse.x*-6}px,${mouse.y*-4}px)`,
+        transition:"transform .12s ease",
+      }}>
+        {/* Status */}
+        <div style={{opacity:0,animation:"fadeUp .7s ease .1s forwards"}}>
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:MONO,fontSize:".62rem",color:G,letterSpacing:".15em",textTransform:"uppercase",border:"1px solid rgba(16,185,129,.22)",borderRadius:100,padding:"5px 14px",marginBottom:"2rem",background:"rgba(16,185,129,.05)"}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:G,animation:"glow 1.8s ease-in-out infinite",display:"inline-block"}}/>
+            Available for Opportunities
+          </div>
+        </div>
+
+        {/* Name — 3D depth effect via textShadow layers */}
+        <div style={{opacity:0,animation:"fadeUp .7s ease .2s forwards"}}>
+          <h1 style={{
+            fontFamily:SANS,fontSize:"clamp(2.4rem,7vw,4.5rem)",fontWeight:800,color:FG,
+            letterSpacing:"-.04em",lineHeight:1.05,margin:"0 0 1.1rem",whiteSpace:"nowrap",
+            textShadow:`0 1px 0 rgba(124,58,237,.3), 0 2px 0 rgba(124,58,237,.2), 0 4px 0 rgba(124,58,237,.1), 0 8px 20px rgba(0,0,0,.5)`,
+            transform:`perspective(600px) rotateX(${mouse.y*3}deg) rotateY(${mouse.x*-3}deg)`,
+            transition:"transform .15s ease",
+          }}>
+            Koushik Bijili
+          </h1>
+        </div>
+
+        {/* Role */}
+        <div style={{opacity:0,animation:"fadeUp .7s ease .3s forwards"}}>
+          <p style={{fontFamily:SANS,fontSize:"clamp(1rem,2.5vw,1.2rem)",color:FG2,margin:"0 0 1.6rem",lineHeight:1.5,fontWeight:400}}>
+            <Typer/>
+          </p>
+        </div>
+
+        {/* Description */}
+        <div style={{opacity:0,animation:"fadeUp .7s ease .4s forwards"}}>
+          <p style={{fontFamily:SANS,fontSize:".93rem",lineHeight:1.88,color:FG3,maxWidth:500,margin:"0 auto 2.8rem"}}>
+            I design and manage cloud-based systems with a focus on scalability and automation. Delivering solutions that are efficient, reliable, and ready for production use.
+          </p>
+        </div>
+
+        {/* CTAs */}
+        <div style={{opacity:0,animation:"fadeUp .7s ease .5s forwards"}}>
+          <div style={{display:"flex",gap:".9rem",justifyContent:"center",flexWrap:"wrap",marginBottom:"2.8rem"}}>
+            <button onClick={()=>document.getElementById("projects")?.scrollIntoView({behavior:"smooth"})}
+              style={{fontFamily:SANS,fontSize:".82rem",fontWeight:600,color:"#fff",background:V,border:"none",cursor:"pointer",padding:"12px 30px",borderRadius:8,letterSpacing:"-.01em",transition:"all .25s",boxShadow:`0 0 0 0 ${V2}`}}
+              onMouseEnter={e=>{e.target.style.transform="translateY(-2px)";e.target.style.boxShadow=`0 10px 40px ${V2}`;}}
+              onMouseLeave={e=>{e.target.style.transform="translateY(0)";e.target.style.boxShadow="0 0 0 0 transparent";}}>
+              View Projects
+            </button>
+            <button onClick={()=>document.getElementById("contact")?.scrollIntoView({behavior:"smooth"})}
+              style={{fontFamily:SANS,fontSize:".82rem",fontWeight:500,color:FG2,background:"transparent",border:`1px solid ${BDH}`,cursor:"pointer",padding:"12px 30px",borderRadius:8,letterSpacing:"-.01em",transition:"all .25s"}}
+              onMouseEnter={e=>{e.target.style.color=FG;e.target.style.borderColor=V3;e.target.style.background=V1;}}
+              onMouseLeave={e=>{e.target.style.color=FG2;e.target.style.borderColor=BDH;e.target.style.background="transparent";}}>
+              Contact Me
+            </button>
+          </div>
+        </div>
+
+        {/* Social links */}
+        <div style={{opacity:0,animation:"fadeUp .7s ease .6s forwards"}}>
+          <div style={{display:"flex",gap:"2rem",justifyContent:"center"}}>
+            {[{l:"LinkedIn",u:"https://linkedin.com/in/koushikbijili"},{l:"GitHub",u:"https://github.com/koushikbijili"},{l:"Email",u:"mailto:koushikbijili48@gmail.com"}].map(s=>(
+              <a key={s.l} href={s.u} target="_blank" rel="noreferrer"
+                style={{fontFamily:MONO,fontSize:".6rem",color:FG3,textDecoration:"none",letterSpacing:".1em",textTransform:"uppercase",transition:"color .25s"}}
+                onMouseEnter={e=>e.target.style.color=FG} onMouseLeave={e=>e.target.style.color=FG3}>{s.l}</a>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="scroll-hint"><span>Scroll</span><div className="line" /></div>
+
+      {/* Scroll cue */}
+      <div style={{position:"absolute",bottom:"2.5rem",left:"50%",transform:"translateX(-50%)",display:"flex",flexDirection:"column",alignItems:"center",gap:6,zIndex:2,animation:"bob 2.5s ease-in-out infinite"}}>
+        <span style={{fontFamily:MONO,fontSize:".55rem",color:FG3,letterSpacing:".15em",textTransform:"uppercase"}}>scroll</span>
+        <div style={{width:1,height:40,background:`linear-gradient(${V3},transparent)`}}/>
+      </div>
     </section>
   );
 }
 
-/* ─── ABOUT ─── */
-function About({ addRef }) {
-  return (
-    <section className="pf-section" id="about">
-      <div className="container">
-        <div className="row align-items-center">
-          {/* left col */}
-          <div className="col-lg-5 text-center mb-5 mb-lg-0 reveal" ref={addRef}>
-            <div className="about-ring">
-              <div className="about-ring-border" />
-              <div className="about-ring-inner">👨‍💻</div>
-            </div>
-            <div className="stat-row">
-              {[["1+", "Year Exp"], ["3+", "Projects"], ["2", "Certs"]].map(([n, l]) => (
-                <div className="stat-card" key={l}><div className="stat-number">{n}</div><div className="stat-label">{l}</div></div>
+/* ── ABOUT ──────────────────────────────────────────────────── */
+function About() {
+  return(
+    <section id="about" style={{padding:"8rem clamp(1.5rem,4vw,3rem)",background:BG1,position:"relative",overflow:"hidden"}}>
+      {/* Decorative corner lines */}
+      <div style={{position:"absolute",top:0,right:"8%",width:1,height:120,background:`linear-gradient(${BD},transparent)`,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:0,right:"8%",width:80,height:1,background:`linear-gradient(270deg,${BD},transparent)`,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:0,left:"5%",width:1,height:100,background:`linear-gradient(transparent,${BD})`,pointerEvents:"none"}}/>
+
+      <div style={{maxWidth:1080,margin:"0 auto"}}>
+        <div className="a2col" style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:"5rem",alignItems:"start"}}>
+          <Reveal>
+            <SL tag="01 — About" title="Who I Am"/>
+            <div style={{display:"flex",gap:".6rem",flexWrap:"wrap",marginTop:"1rem"}}>
+              {[["📍","Hyderabad"],["☁️","Cloud & DevOps"],["✅","Open to Work"]].map(([ic,v])=>(
+                <span key={v} style={{fontFamily:SANS,fontSize:".73rem",color:FG2,background:`rgba(241,245,249,.04)`,border:`1px solid ${BD}`,borderRadius:6,padding:"4px 11px"}}>
+                  <span style={{fontSize:12}}>{ic}</span> {v}
+                </span>
               ))}
             </div>
-          </div>
+          </Reveal>
 
-          {/* right col */}
-          <div className="col-lg-7 reveal" ref={addRef} style={{ transitionDelay: ".14s" }}>
-            <div className="section-label">About Me</div>
-            <div className="accent-line" />
-            <h2 className="section-title">Building reliable cloud<br />infrastructure at scale</h2>
-            <p className="section-desc">
-              I'm a Cloud & DevOps Engineer based in Hyderabad with hands-on experience deploying and managing AWS infrastructure. I work daily with CI/CD pipelines, Docker, and monitoring tools like Prometheus and Grafana to keep deployments automated and reliable.
-            </p>
-            <p className="section-desc" style={{ marginTop: ".9rem" }}>
-              Strong interest in cloud automation, DevOps best-practices, and building stable, scalable systems. Always looking to sharpen skills and ship better software.
-            </p>
-            {/* education chip */}
-            <div style={{ marginTop: "1.6rem", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "1rem 1.2rem", display: "inline-block" }}>
-              <div style={{ fontSize: ".68rem", letterSpacing: ".15em", textTransform: "uppercase", color: "var(--accent)", marginBottom: ".25rem" }}>Education</div>
-              <div style={{ color: "var(--text-light)", fontSize: ".88rem", fontFamily: "'Playfair Display',serif" }}>{education.college}</div>
-              <div style={{ color: "var(--text-muted)", fontSize: ".78rem", marginTop: ".15rem" }}>{education.degree} &nbsp;|&nbsp; CGPA: <strong style={{ color: "var(--accent)" }}>{education.cgpa}</strong></div>
-              <div style={{ color: "var(--text-muted)", fontSize: ".72rem", marginTop: ".1rem" }}>{education.duration}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
+          <div style={{display:"flex",flexDirection:"column",gap:"1.2rem"}}>
+            <Reveal delay={60}>
+              <p style={{fontFamily:SANS,fontSize:".95rem",lineHeight:1.88,color:FG2,margin:0}}>
+                I'm a <span style={{color:FG,fontWeight:600}}>Cloud & DevOps Engineer</span> focused on building scalable and reliable cloud systems. With a background in Automobile Engineering, I transitioned into cloud with a clear focus on infrastructure, automation, and real-world problem solving.
+              </p>
+            </Reveal>
+            <Reveal delay={120}>
+              <p style={{fontFamily:SANS,fontSize:".95rem",lineHeight:1.88,color:FG2,margin:0}}>
+                At <span style={{color:FG,fontWeight:600}}>Visys Cloud Technologies</span>, I work with production systems, focusing on deployment automation, infrastructure management, and reliability — ensuring systems run smoothly and consistently.
+              </p>
+            </Reveal>
+            <Reveal delay={180}>
+              <p style={{fontFamily:SANS,fontSize:".95rem",lineHeight:1.88,color:FG2,margin:0}}>
+               I believe in keeping systems simple, automated, and production-ready — so they perform consistently without unnecessary complexity.
+              </p>
+            </Reveal>
 
-/* ─── SKILLS ─── */
-function Skills({ addRef }) {
-  return (
-    <section className="pf-section" id="skills" style={{ background: "linear-gradient(180deg, var(--bg-deep) 0%, #0e0f15 100%)" }}>
-      <div className="container">
-        <div className="text-center mb-5 reveal" ref={addRef}>
-          <div className="section-label">Expertise</div>
-          <div className="accent-line mx-auto" />
-          <h2 className="section-title">Technical Skills</h2>
-        </div>
-        <div className="row g-4">
-          {skills.map((s, i) => (
-            <div className="col-md-6 col-lg-4 reveal" ref={addRef} key={s.title} style={{ transitionDelay: `${i * 0.07}s` }}>
-              <div className="skill-card">
-                <div className="skill-icon">{s.icon}</div>
-                <h5>{s.title}</h5>
-                <p>{s.desc}</p>
-                <div className="skill-tags">{s.tags.map((t) => <span className="skill-tag" key={t}>{t}</span>)}</div>
+            {/* Stats */}
+            <Reveal delay={240}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"1px",background:BD,border:`1px solid ${BD}`,borderRadius:10,overflow:"hidden",marginTop:".8rem"}}>
+                {[["3+","Projects"],["6mo","Internship"],["2","Certs"],["10+","Cloud Svcs"]].map(([n,l])=>(
+                  <div key={l} style={{background:BG1,padding:"1.2rem .8rem",textAlign:"center"}}>
+                    <div style={{fontFamily:SANS,fontSize:"1.5rem",fontWeight:700,color:FG,letterSpacing:"-.03em",marginBottom:3}}>{n}</div>
+                    <div style={{fontFamily:SANS,fontSize:".65rem",color:FG3,textTransform:"uppercase",letterSpacing:".08em"}}>{l}</div>
+                  </div>
+                ))}
               </div>
-            </div>
+            </Reveal>
+
+            <Reveal delay={300}>
+              <div style={{display:"flex",gap:".7rem",flexWrap:"wrap",marginTop:".5rem"}}>
+                <a href="mailto:koushikbijili48@gmail.com" style={{fontFamily:SANS,fontSize:".82rem",fontWeight:600,color:"#fff",background:V,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s"}} onMouseEnter={e=>{e.currentTarget.style.opacity=".85";e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>Hire Me</a>
+                <a href="https://github.com/koushikbijili" target="_blank" rel="noreferrer" style={{fontFamily:SANS,fontSize:".82rem",fontWeight:500,color:FG2,border:`1px solid ${BD}`,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s"}} onMouseEnter={e=>{e.currentTarget.style.color=FG;e.currentTarget.style.borderColor=BDH;}} onMouseLeave={e=>{e.currentTarget.style.color=FG2;e.currentTarget.style.borderColor=BD;}}>GitHub →</a>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── PHILOSOPHY ─────────────────────────────────────────────── */
+function Philosophy() {
+  return(
+    <section id="philosophy" style={{padding:"8rem clamp(1.5rem,4vw,3rem)",background:BG0,position:"relative",overflow:"hidden"}}>
+      {/* Subtle accent glow */}
+      <div style={{position:"absolute",top:"30%",right:"-5%",width:400,height:400,borderRadius:"50%",background:`radial-gradient(circle,${V1},transparent 70%)`,filter:"blur(60px)",pointerEvents:"none"}}/>
+      <div style={{maxWidth:1080,margin:"0 auto",position:"relative"}}>
+        <Reveal><SL tag="02 — Philosophy" title="How I Work"/></Reveal>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:"1px",background:BD,border:`1px solid ${BD}`,borderRadius:12,overflow:"hidden"}}>
+          {PHILOSOPHY.map((p,i)=>(
+            <Reveal key={i} delay={i*55}>
+              <Tilt depth={6} glow={V1} style={{background:BG0,borderRadius:0,boxShadow:"none",border:"none",height:"100%"}}>
+                <div style={{padding:"2rem",height:"100%",transition:"background .25s",borderTop:`2px solid transparent`}}
+                  onMouseEnter={e=>{e.currentTarget.style.background=V1;e.currentTarget.style.borderTopColor=V;}}
+                  onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderTopColor="transparent";}}>
+                  <div style={{fontSize:24,marginBottom:"1rem"}}>{p.icon}</div>
+                  <h3 style={{fontFamily:SANS,fontSize:".9rem",fontWeight:600,color:FG,margin:"0 0 .7rem",letterSpacing:"-.015em",lineHeight:1.3}}>{p.title}</h3>
+                  <p style={{fontFamily:SANS,fontSize:".83rem",lineHeight:1.82,color:FG2,margin:0}}>{p.desc}</p>
+                </div>
+              </Tilt>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -564,42 +431,29 @@ function Skills({ addRef }) {
   );
 }
 
-/* ─── PROJECTS ─── */
-function Projects({ addRef }) {
-  const [filter, setFilter] = useState("All");
-  const allTags = ["All", ...new Set(projects.flatMap((p) => p.tags))];
-  const filtered = filter === "All" ? projects : projects.filter((p) => p.tags.includes(filter));
-
-  return (
-    <section className="pf-section" id="projects">
-      <div className="container">
-        <div className="text-center mb-4 reveal" ref={addRef}>
-          <div className="section-label">Portfolio</div>
-          <div className="accent-line mx-auto" />
-          <h2 className="section-title">Projects</h2>
-        </div>
-        <div className="d-flex justify-content-center flex-wrap gap-2 mb-5 reveal" ref={addRef}>
-          {allTags.map((t) => (
-            <button key={t} className={`filter-pill ${filter === t ? "active" : ""}`} onClick={() => setFilter(t)}>{t}</button>
-          ))}
-        </div>
-        <div className="row g-4">
-          {filtered.map((p, i) => (
-            <div className="col-md-6 col-lg-4 reveal" ref={addRef} key={p.title} style={{ transitionDelay: `${i * 0.1}s` }}>
-              <div className="project-card">
-                <div className="project-img">{p.emoji}</div>
-                <div className="project-body">
-                  <h5>{p.title}</h5>
-                  <p>{p.desc}</p>
-                  <div className="skill-tags">{p.tags.map((t) => <span className="skill-tag" key={t}>{t}</span>)}</div>
-                  <div className="project-links">
-                    <span className="project-link">Live Demo →</span>
-                    <span className="project-link">GitHub →</span>
-
+/* ── SKILLS ─────────────────────────────────────────────────── */
+function Skills() {
+  return(
+    <section id="skills" style={{padding:"8rem clamp(1.5rem,4vw,3rem)",background:BG0,position:"relative"}}>
+      <div style={{maxWidth:1080,margin:"0 auto"}}>
+        <Reveal><SL tag="03 — Skills" title="Tech Stack"/></Reveal>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:"1px",background:BD,border:`1px solid ${BD}`,borderRadius:12,overflow:"hidden"}}>
+          {SKILLS.map((s,i)=>(
+            <Reveal key={i} delay={i*50}>
+              <Tilt depth={6} glow="rgba(124,58,237,0.1)"
+                style={{background:BG0,borderRadius:0,boxShadow:"none",border:"none",height:"100%"}}>
+                <div style={{padding:"1.8rem",height:"100%",transition:"background .25s"}}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(124,58,237,0.04)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <h3 style={{fontFamily:SANS,fontSize:".78rem",fontWeight:600,color:V,margin:"0 0 1rem",textTransform:"uppercase",letterSpacing:".08em"}}>{s.cat}</h3>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:".38rem"}}>
+                    {s.items.map((item,j)=>(
+                      <span key={j} style={{fontFamily:MONO,fontSize:".65rem",color:FG2,background:"rgba(241,245,249,.04)",border:`1px solid ${BD}`,borderRadius:4,padding:"3px 8px",lineHeight:1.5}}>{item}</span>
+                    ))}
                   </div>
                 </div>
-              </div>
-            </div>
+              </Tilt>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -607,162 +461,282 @@ function Projects({ addRef }) {
   );
 }
 
-/* ─── EXPERIENCE ─── */
-function Experience({ addRef }) {
-  return (
-    <section className="pf-section" id="experience" style={{ background: "linear-gradient(180deg, #0e0f15 0%, var(--bg-deep) 100%)" }}>
-      <div className="container">
-        <div className="row">
-          <div className="col-lg-5 mb-5 mb-lg-0 reveal" ref={addRef}>
-            <div className="section-label">Career</div>
-            <div className="accent-line" />
-            <h2 className="section-title">Experience &<br />Education</h2>
-            <p className="section-desc">The roles and environments that shaped how I build and deploy cloud infrastructure today.</p>
+/* ── EXPERIENCE ─────────────────────────────────────────────── */
+function Experience() {
+  return(
+    <section id="experience" style={{padding:"8rem clamp(1.5rem,4vw,3rem)",background:BG1}}>
+      <div style={{maxWidth:1080,margin:"0 auto"}}>
+        <div className="a2col" style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:"5rem",alignItems:"start"}}>
+          <Reveal><SL tag="04 — Experience" title="Where I've Worked"/></Reveal>
+          <div>
+            <Reveal>
+              <div style={{paddingBottom:"2.8rem",marginBottom:"2.8rem",borderBottom:`1px solid ${BD}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:".5rem",marginBottom:"1.2rem"}}>
+                  <div>
+                    <h3 style={{fontFamily:SANS,fontSize:"1rem",fontWeight:600,color:FG,margin:"0 0 .2rem",letterSpacing:"-.015em"}}>Cloud & DevOps Intern</h3>
+                    <p style={{fontFamily:SANS,fontSize:".82rem",color:FG3,margin:0}}>Visys Cloud Technologies · Hyderabad</p>
+                  </div>
+                  <span style={{fontFamily:MONO,fontSize:".6rem",color:V,background:V1,border:`1px solid ${V2}`,borderRadius:4,padding:"3px 10px",whiteSpace:"nowrap"}}>Sep 2025 – Feb 2026</span>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:".75rem"}}>
+                  {["Automated CI/CD workflows with Jenkins, improving deployment efficiency and reducing manual intervention.",
+                    "Designed and provisioned cloud infrastructure (compute, storage, networking, load balancing, auto scaling) for highly available deployments.",
+                    "Configured Prometheus metrics and visualised performance using Grafana dashboards.",
+                    "Managed user access, configured systems with access control and active directory."
+                  ].map((pt,i)=>(
+                    <div key={i} style={{display:"flex",gap:".75rem",alignItems:"flex-start"}}>
+                      <span style={{width:4,height:4,borderRadius:"50%",background:V,flexShrink:0,marginTop:8}}/>
+                      <span style={{fontFamily:SANS,fontSize:".88rem",lineHeight:1.8,color:FG2}}>{pt}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={80}>
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:".5rem",marginBottom:".5rem"}}>
+                  <div>
+                    <h3 style={{fontFamily:SANS,fontSize:"1rem",fontWeight:600,color:FG,margin:"0 0 .2rem",letterSpacing:"-.015em"}}>Bachelor of Engineering</h3>
+                    <p style={{fontFamily:SANS,fontSize:".82rem",color:FG3,margin:"0 0 .1rem"}}>MVSR Engineering College, Hyderabad</p>
+                    <p style={{fontFamily:SANS,fontSize:".82rem",color:FG3,margin:0}}>Automobile Engineering · CGPA 7.26</p>
+                  </div>
+                  <span style={{fontFamily:MONO,fontSize:".6rem",color:FG3,background:"rgba(241,245,249,.04)",border:`1px solid ${BD}`,borderRadius:4,padding:"3px 10px",whiteSpace:"nowrap"}}>2020 – 2024</span>
+                </div>
+              </div>
+            </Reveal>
           </div>
-          <div className="col-lg-7">
-            <div className="timeline">
-              {experience.map((e, i) => (
-                <div className="timeline-item reveal" ref={addRef} key={e.title} style={{ transitionDelay: `${i * 0.14}s` }}>
-                  <div className="timeline-dot" />
-                  <div className="timeline-date">{e.date}</div>
-                  <div className="timeline-title">{e.title}</div>
-                  <div className="timeline-company">{e.company}</div>
-                  <ul className="timeline-desc" style={{ paddingLeft: "1.1rem" }}>
-                    {e.bullets.map((b) => <li key={b}>{b}</li>)}
-                  </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── PROJECTS ───────────────────────────────────────────────── */
+function ProjectCard({p,i}) {
+  const [ref,v]=useInView(0.05);
+  return(
+    <div ref={ref} style={{opacity:v?1:0,transform:v?"translateY(0)":"translateY(32px)",transition:`opacity .7s ease ${i*100}ms, transform .7s ease ${i*100}ms`}}>
+      <Tilt depth={5} glow={`${p.color}18`} style={{background:BG1,borderRadius:12,overflow:"hidden"}}>
+        {/* Accent top bar */}
+        <div style={{height:2,background:`linear-gradient(90deg,${p.color} 0%,transparent 55%)`}}/>
+        <div style={{padding:"2.2rem"}}>
+          {/* Header */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"1rem",marginBottom:"1.3rem"}}>
+            <div>
+              <span style={{fontFamily:MONO,fontSize:".58rem",color:p.color,letterSpacing:".14em",opacity:.8}}>Project {p.n}</span>
+              <h3 style={{fontFamily:SANS,fontSize:"1.05rem",fontWeight:600,color:FG,margin:".25rem 0 .25rem",letterSpacing:"-.02em",lineHeight:1.2}}>{p.title}</h3>
+              <p style={{fontFamily:MONO,fontSize:".58rem",color:FG3,margin:0}}>{p.sub}</p>
+            </div>
+            <a href={p.github} target="_blank" rel="noreferrer"
+              style={{fontFamily:SANS,fontSize:".75rem",fontWeight:500,color:p.color,textDecoration:"none",border:`1px solid ${p.color}35`,padding:"6px 14px",borderRadius:6,transition:"all .25s",whiteSpace:"nowrap"}}
+              onMouseEnter={e=>{e.currentTarget.style.background=`${p.color}12`;e.currentTarget.style.borderColor=`${p.color}65`;}}
+              onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor=`${p.color}35`;}}>
+              GitHub →
+            </a>
+          </div>
+
+          {/* Desc */}
+          <p style={{fontFamily:SANS,fontSize:".88rem",lineHeight:1.88,color:FG2,marginBottom:"1.6rem",paddingBottom:"1.6rem",borderBottom:`1px solid ${BD}`}}>{p.desc}</p>
+
+          {/* Stack */}
+          <div style={{marginBottom:"1.8rem"}}>
+            <p style={{fontFamily:MONO,fontSize:".58rem",color:FG3,letterSpacing:".12em",textTransform:"uppercase",margin:"0 0 .7rem"}}>Stack</p>
+            <div style={{display:"flex",flexWrap:"wrap",gap:".38rem"}}>
+              {p.stack.map((s,j)=><span key={j} style={{fontFamily:MONO,fontSize:".63rem",color:FG2,background:"rgba(241,245,249,.04)",border:`1px solid ${BD}`,borderRadius:4,padding:"3px 9px"}}>{s}</span>)}
+            </div>
+          </div>
+
+          {/* Arch + Built */}
+          <div className="pgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2rem"}}>
+            <div>
+              <p style={{fontFamily:MONO,fontSize:".58rem",color:FG3,letterSpacing:".12em",textTransform:"uppercase",margin:"0 0 .9rem"}}>Architecture</p>
+              {p.arch.map(([t,d],j)=>(
+                <div key={j} style={{marginBottom:".9rem"}}>
+                  <p style={{fontFamily:SANS,fontSize:".8rem",fontWeight:600,color:FG,margin:"0 0 .18rem",letterSpacing:"-.01em"}}>{t}</p>
+                  <p style={{fontFamily:SANS,fontSize:".8rem",lineHeight:1.72,color:FG3,margin:0}}>{d}</p>
                 </div>
               ))}
-
-              {/* Education as timeline item */}
-              <div className="timeline-item reveal" ref={addRef} style={{ transitionDelay: ".28s" }}>
-                <div className="timeline-dot" />
-                <div className="timeline-date">{education.duration}</div>
-                <div className="timeline-title">{education.degree}</div>
-                <div className="timeline-company">{education.college}</div>
-                <p className="timeline-desc">CGPA: <strong style={{ color: "var(--accent)" }}>{education.cgpa}</strong></p>
-              </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── CERTIFICATIONS ─── */
-function Certifications({ addRef }) {
-  return (
-    <section className="pf-section" style={{ paddingTop: "1rem" }}>
-      <div className="container">
-        <div className="text-center mb-4 reveal" ref={addRef}>
-          <div className="section-label">Credentials</div>
-          <div className="accent-line mx-auto" />
-          <h2 className="section-title">Certifications</h2>
-        </div>
-        <div className="row g-3 justify-content-center">
-          {certs.map((c, i) => (
-            <div className="col-md-8 reveal" ref={addRef} key={c.title} style={{ transitionDelay: `${i * 0.1}s` }}>
-              <div className="cert-card">
-                <div>
-                  <h6>{c.title}</h6>
-                  <p>{c.issuer}</p>
+            <div>
+              <p style={{fontFamily:MONO,fontSize:".58rem",color:FG3,letterSpacing:".12em",textTransform:"uppercase",margin:"0 0 .9rem"}}>What I Built</p>
+              {p.built.map((d,j)=>(
+                <div key={j} style={{display:"flex",gap:".6rem",alignItems:"flex-start",marginBottom:".6rem"}}>
+                  <span style={{width:4,height:4,borderRadius:"50%",background:p.color,flexShrink:0,marginTop:6}}/>
+                  <span style={{fontFamily:SANS,fontSize:".82rem",lineHeight:1.75,color:FG2}}>{d}</span>
                 </div>
-                <span className="cert-link">View Certificate →</span>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── CONTACT ─── */
-function Contact({ addRef }) {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [sent, setSent] = useState(false);
-  const submit = () => {
-    if (!form.name || !form.email || !form.message) return;
-    setSent(true);
-    setTimeout(() => setSent(false), 3200);
-    setForm({ name: "", email: "", message: "" });
-  };
-
-  return (
-    <section className="pf-section" id="contact">
-      <div className="container">
-        <div className="text-center mb-5 reveal" ref={addRef}>
-          <div className="section-label">Let's Connect</div>
-          <div className="accent-line mx-auto" />
-          <h2 className="section-title">Get In Touch</h2>
-          <p className="section-desc mx-auto">Have a project in mind, a question, or just want to say hi? Drop me a line.</p>
-        </div>
-        <div className="reveal" ref={addRef}>
-          <div className="contact-wrapper">
-            {sent && <div className="success-toast">Message sent successfully ✓</div>}
-            <input className="contact-input" placeholder="Your Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <input className="contact-input" placeholder="Your Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <textarea className="contact-input" placeholder="Your Message" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-            <button className="btn-primary-custom w-100" style={{ padding: ".74rem" }} onClick={submit}>Send Message</button>
           </div>
         </div>
-        <div className="social-row reveal mt-4" ref={addRef}>
-          {[
-            {
-              label: "LinkedIn",
-              icon: "in",
-              href: "https://www.linkedin.com/in/koushikbijili",
-            },
-            {
-              label: "GitHub",
-              icon: "🐙",
-              href: "https://github.com/koushikbijili",
-            },
-            {
-              label: "Email",
-              icon: "✉",
-              href: "mailto:koushikbijili48@gmail.com",
-            },
-          ].map((s) => (
-            <a
-              key={s.label}
-              href={s.href}
-              className="social-btn"
-              title={s.label}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {s.icon}
-            </a>
-          ))}
+      </Tilt>
+    </div>
+  );
+}
+
+function Projects() {
+  return(
+    <section id="projects" style={{padding:"8rem clamp(1.5rem,4vw,3rem)",background:BG0,position:"relative"}}>
+      <div style={{maxWidth:1080,margin:"0 auto"}}>
+        <Reveal><SL tag="05 — Projects" title="What I've Built"/></Reveal>
+
+        <div style={{display:"flex",flexDirection:"column",gap:"1.5rem"}}>
+          {PROJECTS.map((p,i)=><ProjectCard key={i} p={p} i={i}/>)}
         </div>
       </div>
     </section>
   );
 }
 
-/* ─── APP ─── */
-export default function App() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const addRef = useReveal();
-
-  return (
-    <>
-      <BootstrapLink />
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-      <Hero />
-      <About addRef={addRef} />
-      <Skills addRef={addRef} />
-      <Projects addRef={addRef} />
-      <Experience addRef={addRef} />
-      <Certifications addRef={addRef} />
-      <Contact addRef={addRef} />
-      <footer className="pf-footer">
-        <div className="container">
-          <p>© 2026 Koushik Bijili &nbsp;|&nbsp; <a href="mailto:koushikbijili48@gmail.com">koushikbijili48@gmail.com</a> &nbsp;|&nbsp; Hyderabad, Telangana</p>
+/* ── CERTIFICATIONS ─────────────────────────────────────────── */
+function Certifications() {
+  return(
+    <section id="certifications" style={{padding:"8rem clamp(1.5rem,4vw,3rem)",background:BG1}}>
+      <div style={{maxWidth:1080,margin:"0 auto"}}>
+        <div className="a2col" style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:"5rem",alignItems:"start"}}>
+          <Reveal><SL tag="06 — Certifications" title="Learning & Certifications"/></Reveal>
+          <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
+            {[
+              {name:"Oracle Certified Foundations Associate",issuer:"Oracle",yr:"2025",ic:"🏅",link:"https://drive.google.com/file/d/1bHB38zUN6Pjv1ttnPkfCXMySXVwqlQAy/view?usp=drive_link"},
+              {name:"Solutions Architecture – Job Simulation",issuer:"Forage / Virtual Experience",yr:"2025",ic:"🎯",link:"https://drive.google.com/file/d/1TEQQPHopYd1SMvVJpVIOO7hpEdqMtyxJ/view?usp=drive_link"},
+            ].map((c,i)=>(
+              <Reveal key={i} delay={i*80}>
+                <Tilt depth={7} glow={V1} style={{background:BG0,borderRadius:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"1.4rem",padding:"1.5rem"}}>
+                    <div style={{width:42,height:42,borderRadius:9,background:V1,border:`1px solid ${V2}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <span style={{fontSize:20}}>{c.ic}</span>
+                    </div>
+                    <div style={{flex:1}}>
+                      <h3 style={{fontFamily:SANS,fontSize:".92rem",fontWeight:600,color:FG,margin:"0 0 .2rem",letterSpacing:"-.015em",lineHeight:1.3}}>{c.name}</h3>
+                      <p style={{fontFamily:SANS,fontSize:".78rem",color:FG3,margin:0}}>{c.issuer}</p>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:".8rem",flexShrink:0}}>
+                      <span style={{fontFamily:MONO,fontSize:".58rem",color:FG3}}>{c.yr}</span>
+                      <a href={c.link} target="_blank" rel="noreferrer"
+                        style={{fontFamily:SANS,fontSize:".72rem",fontWeight:500,color:V,textDecoration:"none",border:`1px solid ${V2}`,padding:"5px 12px",borderRadius:6,transition:"all .25s",whiteSpace:"nowrap"}}
+                        onMouseEnter={e=>{e.currentTarget.style.background=V1;e.currentTarget.style.borderColor=V3;}}
+                        onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor=V2;}}>
+                        View →
+                      </a>
+                    </div>
+                  </div>
+                </Tilt>
+              </Reveal>
+            ))}
+          </div>
         </div>
-      </footer>
+      </div>
+    </section>
+  );
+}
+
+/* ── CONTACT ────────────────────────────────────────────────── */
+function Contact() {
+  const contacts=[
+    {l:"Email",v:"koushikbijili48@gmail.com",href:"mailto:koushikbijili48@gmail.com"},
+    {l:"Phone",v:"+91 7675082758",href:"tel:+917675082758"},
+    {l:"LinkedIn",v:"koushikbijili",href:"https://linkedin.com/in/koushikbijili"},
+    {l:"GitHub",v:"koushikbijili",href:"https://github.com/koushikbijili"},
+    {l:"Location",v:"Hyderabad, Telangana",href:"#"},
+  ];
+  return(
+    <section id="contact" style={{padding:"8rem clamp(1.5rem,4vw,3rem) 6rem",background:BG0,position:"relative",overflow:"hidden"}}>
+      {/* Bottom glow */}
+      <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:600,height:200,background:`radial-gradient(ellipse,${V1},transparent 70%)`,pointerEvents:"none"}}/>
+
+      <div style={{maxWidth:1080,margin:"0 auto",position:"relative"}}>
+        <div className="a2col" style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:"5rem",alignItems:"start"}}>
+          <Reveal>
+            <SL tag="07 — Contact" title="Get in Touch"/>
+            <p style={{fontFamily:SANS,fontSize:".92rem",lineHeight:1.85,color:FG2,marginBottom:"1.5rem"}}>Open to Cloud and DevOps roles focused on infrastructure, automation, and reliability. Feel free to reach out via email or LinkedIn to connect.</p>
+            <div style={{display:"flex",gap:".7rem"}}>
+              <a href="mailto:koushikbijili48@gmail.com" style={{fontFamily:SANS,fontSize:".82rem",fontWeight:600,color:"#fff",background:V,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s",display:"inline-block"}} onMouseEnter={e=>{e.currentTarget.style.opacity=".85";e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>Send Email</a>
+              <a href="https://linkedin.com/in/koushikbijili" target="_blank" rel="noreferrer" style={{fontFamily:SANS,fontSize:".82rem",fontWeight:500,color:FG2,border:`1px solid ${BD}`,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s",display:"inline-block"}} onMouseEnter={e=>{e.currentTarget.style.color=FG;e.currentTarget.style.borderColor=BDH;}} onMouseLeave={e=>{e.currentTarget.style.color=FG2;e.currentTarget.style.borderColor=BD;}}>LinkedIn →</a>
+            </div>
+          </Reveal>
+
+          <div style={{display:"flex",flexDirection:"column",gap:".65rem"}}>
+            {contacts.map((c,i)=>(
+              <Reveal key={i} delay={i*55}>
+                <a href={c.href} target={c.href.startsWith("http")?"_blank":undefined} rel="noreferrer"
+                  style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.4rem",background:BG1,border:`1px solid ${BD}`,borderRadius:8,textDecoration:"none",transition:"all .25s",gap:"1rem"}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=BDH;e.currentTarget.style.background=V1;}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=BD;e.currentTarget.style.background=BG1;}}>
+                  <span style={{fontFamily:MONO,fontSize:".58rem",color:V,letterSpacing:".1em",textTransform:"uppercase",minWidth:68}}>{c.l}</span>
+                  <span style={{fontFamily:SANS,fontSize:".85rem",color:FG2,flex:1}}>{c.v}</span>
+                  <span style={{color:FG3,fontSize:".72rem"}}>→</span>
+                </a>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{marginTop:"5rem",paddingTop:"2rem",borderTop:`1px solid ${BD}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"1rem"}}>
+          <span style={{fontFamily:MONO,fontSize:".58rem",color:FG3,letterSpacing:".08em"}}>KB. · Cloud & DevOps Engineer · {new Date().getFullYear()}</span>
+          <div style={{display:"flex",gap:"1.5rem"}}>
+            {[{l:"LinkedIn",u:"https://linkedin.com/in/koushikbijili"},{l:"GitHub",u:"https://github.com/koushikbijili"}].map(s=>(
+              <a key={s.l} href={s.u} target="_blank" rel="noreferrer" style={{fontFamily:MONO,fontSize:".58rem",color:FG3,textDecoration:"none",letterSpacing:".08em",textTransform:"uppercase",transition:"color .25s"}} onMouseEnter={e=>e.target.style.color=FG} onMouseLeave={e=>e.target.style.color=FG3}>{s.l}</a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── APP ────────────────────────────────────────────────────── */
+export default function App() {
+  const [active,setActive]=useState("Home");
+  const mouse=useMouse();
+
+  useEffect(()=>{
+    const ids=["home","about","philosophy","skills","experience","projects","certifications","contact"];
+    const obs=new IntersectionObserver(es=>{
+      es.forEach(e=>{if(e.isIntersecting)setActive(e.target.id.charAt(0).toUpperCase()+e.target.id.slice(1));});
+    },{rootMargin:"-40% 0px -40% 0px"});
+    ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
+    return()=>obs.disconnect();
+  },[]);
+
+  return(
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        html{scroll-behavior:smooth;}
+        body{background:${BG0};color:${FG};overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+        ::-webkit-scrollbar{width:3px;}
+        ::-webkit-scrollbar-track{background:${BG0};}
+        ::-webkit-scrollbar-thumb{background:rgba(124,58,237,.45);border-radius:2px;}
+
+        @keyframes fadeUp  { from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);} }
+        @keyframes blink   { 0%,100%{opacity:1;}50%{opacity:0;} }
+        @keyframes glow    { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5);}50%{box-shadow:0 0 0 5px rgba(16,185,129,0);} }
+        @keyframes pulse   { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(1.3);} }
+        @keyframes ring    { 0%{transform:scale(.85);opacity:1;}100%{transform:scale(1.7);opacity:0;} }
+        @keyframes packet  { 0%{left:0;}100%{left:calc(100% - 6px);} }
+        @keyframes bob     { 0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(8px);} }
+        @keyframes floatOrb{ 0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-20px);} }
+
+        .dnav{display:flex!important;}
+        .ham{display:none!important;}
+        @media(max-width:820px){
+          .dnav{display:none!important;}
+          .ham{display:block!important;}
+          .a2col{grid-template-columns:1fr!important;gap:2.5rem!important;}
+          .pgrid{grid-template-columns:1fr!important;gap:1.5rem!important;}
+          h1{white-space:normal!important;font-size:clamp(2rem,9vw,3rem)!important;}
+        }
+      `}</style>
+      <Nav active={active} setActive={setActive}/>
+      <Hero mouse={mouse}/>
+      <About/>
+      <Philosophy/>
+      <Skills/>
+      <Experience/>
+      <Projects/>
+      <Certifications/>
+      <Contact/>
     </>
   );
 }
