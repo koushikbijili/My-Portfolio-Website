@@ -27,6 +27,9 @@ const BDH = "rgba(124,58,237,0.4)";
 const SANS = "'Inter',system-ui,sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
+/* ── ANALYTICS ──────────────────────────────────────────────── */
+const trackEvent = (eventName) => { if (window.gtag) { window.gtag('event', eventName); } };
+
 /* ── DATA ───────────────────────────────────────────────────── */
 const ROLES = ["Cloud Engineer","Junior DevOps Engineer","Platform Engineer","Infrastructure Engineer","Site Reliability Engineer (SRE)"];
 
@@ -198,7 +201,7 @@ function Nav({active,setActive}) {
           </button>
         ))}
       </div>
-      <a href="mailto:koushikbijili48@gmail.com" className="dnav"
+      <a href="mailto:koushikbijili48@gmail.com" className="dnav" onClick={()=>trackEvent('hire_click')}
         style={{fontFamily:SANS,fontSize:".75rem",fontWeight:600,color:"#fff",background:V,textDecoration:"none",padding:"7px 18px",borderRadius:7,transition:"all .25s",letterSpacing:"-.01em"}}
         onMouseEnter={e=>{e.currentTarget.style.opacity=".85";e.currentTarget.style.transform="translateY(-1px)";}}
         onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>
@@ -254,13 +257,13 @@ function Hero({mouse}) {
 
         <div style={{opacity:0,animation:"fadeUp .7s ease .5s forwards"}}>
           <div style={{display:"flex",gap:".9rem",justifyContent:"center",flexWrap:"wrap",marginBottom:"2.8rem"}}>
-            <button onClick={()=>document.getElementById("projects")?.scrollIntoView({behavior:"smooth"})}
+            <button onClick={()=>{trackEvent('projects_click');document.getElementById("projects")?.scrollIntoView({behavior:"smooth"});}}
               style={{fontFamily:SANS,fontSize:".82rem",fontWeight:600,color:"#fff",background:V,border:"none",cursor:"pointer",padding:"12px 30px",borderRadius:8,letterSpacing:"-.01em",transition:"all .25s",boxShadow:`0 0 0 0 ${V2}`}}
               onMouseEnter={e=>{e.target.style.transform="translateY(-2px)";e.target.style.boxShadow=`0 10px 40px ${V2}`;}}
               onMouseLeave={e=>{e.target.style.transform="translateY(0)";e.target.style.boxShadow="0 0 0 0 transparent";}}>
               View Projects
             </button>
-            <button onClick={()=>document.getElementById("contact")?.scrollIntoView({behavior:"smooth"})}
+            <button onClick={()=>{trackEvent('contact_click');document.getElementById("contact")?.scrollIntoView({behavior:"smooth"});}}
               style={{fontFamily:SANS,fontSize:".82rem",fontWeight:500,color:FG2,background:"transparent",border:`1px solid ${BDH}`,cursor:"pointer",padding:"12px 30px",borderRadius:8,letterSpacing:"-.01em",transition:"all .25s"}}
               onMouseEnter={e=>{e.target.style.color=FG;e.target.style.borderColor=V3;e.target.style.background=V1;}}
               onMouseLeave={e=>{e.target.style.color=FG2;e.target.style.borderColor=BDH;e.target.style.background="transparent";}}>
@@ -271,8 +274,8 @@ function Hero({mouse}) {
 
         <div style={{opacity:0,animation:"fadeUp .7s ease .6s forwards"}}>
           <div style={{display:"flex",gap:"2rem",justifyContent:"center"}}>
-            {[{l:"LinkedIn",u:"https://linkedin.com/in/koushikbijili"},{l:"GitHub",u:"https://github.com/koushikbijili"},{l:"Email",u:"mailto:koushikbijili48@gmail.com"}].map(s=>(
-              <a key={s.l} href={s.u} target="_blank" rel="noreferrer"
+            {[{l:"LinkedIn",u:"https://linkedin.com/in/koushikbijili",ev:"linkedin_click"},{l:"GitHub",u:"https://github.com/koushikbijili",ev:"github_click"},{l:"Email",u:"mailto:koushikbijili48@gmail.com",ev:"hire_click"}].map(s=>(
+              <a key={s.l} href={s.u} target="_blank" rel="noreferrer" onClick={()=>trackEvent(s.ev)}
                 style={{fontFamily:MONO,fontSize:".6rem",color:FG3,textDecoration:"none",letterSpacing:".1em",textTransform:"uppercase",transition:"color .25s"}}
                 onMouseEnter={e=>e.target.style.color=FG} onMouseLeave={e=>e.target.style.color=FG3}>{s.l}</a>
             ))}
@@ -339,8 +342,8 @@ function About() {
 
             <Reveal delay={300}>
               <div style={{display:"flex",gap:".7rem",flexWrap:"wrap",marginTop:".5rem"}}>
-                <a href="mailto:koushikbijili48@gmail.com" style={{fontFamily:SANS,fontSize:".82rem",fontWeight:600,color:"#fff",background:V,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s"}} onMouseEnter={e=>{e.currentTarget.style.opacity=".85";e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>Hire Me</a>
-                <a href="https://github.com/koushikbijili" target="_blank" rel="noreferrer" style={{fontFamily:SANS,fontSize:".82rem",fontWeight:500,color:FG2,border:`1px solid ${BD}`,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s"}} onMouseEnter={e=>{e.currentTarget.style.color=FG;e.currentTarget.style.borderColor=BDH;}} onMouseLeave={e=>{e.currentTarget.style.color=FG2;e.currentTarget.style.borderColor=BD;}}>GitHub →</a>
+                <a href="mailto:koushikbijili48@gmail.com" onClick={()=>trackEvent('hire_click')} style={{fontFamily:SANS,fontSize:".82rem",fontWeight:600,color:"#fff",background:V,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s"}} onMouseEnter={e=>{e.currentTarget.style.opacity=".85";e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>Hire Me</a>
+                <a href="https://github.com/koushikbijili" target="_blank" rel="noreferrer" onClick={()=>trackEvent('github_click')} style={{fontFamily:SANS,fontSize:".82rem",fontWeight:500,color:FG2,border:`1px solid ${BD}`,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s"}} onMouseEnter={e=>{e.currentTarget.style.color=FG;e.currentTarget.style.borderColor=BDH;}} onMouseLeave={e=>{e.currentTarget.style.color=FG2;e.currentTarget.style.borderColor=BD;}}>GitHub →</a>
               </div>
             </Reveal>
           </div>
@@ -543,7 +546,7 @@ function ProjectCard({p,i}) {
               <h3 style={{fontFamily:SANS,fontSize:"1.05rem",fontWeight:600,color:FG,margin:".25rem 0 .25rem",letterSpacing:"-.02em",lineHeight:1.2}}>{p.title}</h3>
               <p style={{fontFamily:MONO,fontSize:".58rem",color:FG3,margin:0}}>{p.sub}</p>
             </div>
-            <a href={p.github} target="_blank" rel="noreferrer"
+            <a href={p.github} target="_blank" rel="noreferrer" onClick={()=>trackEvent('github_click')}
               style={{fontFamily:SANS,fontSize:".75rem",fontWeight:500,color:p.color,textDecoration:"none",border:`1px solid ${p.color}35`,padding:"6px 14px",borderRadius:6,transition:"all .25s",whiteSpace:"nowrap"}}
               onMouseEnter={e=>{e.currentTarget.style.background=`${p.color}12`;e.currentTarget.style.borderColor=`${p.color}65`;}}
               onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor=`${p.color}35`;}}>
@@ -620,7 +623,7 @@ function Certifications() {
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:".8rem",flexShrink:0}}>
                       <span style={{fontFamily:MONO,fontSize:".58rem",color:FG3}}>{c.yr}</span>
-                      <a href={c.link} target="_blank" rel="noreferrer"
+                      <a href={c.link} target="_blank" rel="noreferrer" onClick={()=>trackEvent('cert_click')}
                         style={{fontFamily:SANS,fontSize:".72rem",fontWeight:500,color:V,textDecoration:"none",border:`1px solid ${V2}`,padding:"5px 12px",borderRadius:6,transition:"all .25s",whiteSpace:"nowrap"}}
                         onMouseEnter={e=>{e.currentTarget.style.background=V1;e.currentTarget.style.borderColor=V3;}}
                         onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor=V2;}}>
@@ -641,11 +644,11 @@ function Certifications() {
 /* ── CONTACT ────────────────────────────────────────────────── */
 function Contact() {
   const contacts=[
-    {l:"Email",v:"koushikbijili48@gmail.com",href:"mailto:koushikbijili48@gmail.com"},
-    {l:"Phone",v:"+91 7675082758",href:"tel:+917675082758"},
-    {l:"LinkedIn",v:"koushikbijili",href:"https://linkedin.com/in/koushikbijili"},
-    {l:"GitHub",v:"koushikbijili",href:"https://github.com/koushikbijili"},
-    {l:"Location",v:"Hyderabad, Telangana",href:"#"},
+    {l:"Email",v:"koushikbijili48@gmail.com",href:"mailto:koushikbijili48@gmail.com",ev:"hire_click"},
+    {l:"Phone",v:"+91 7675082758",href:"tel:+917675082758",ev:null},
+    {l:"LinkedIn",v:"koushikbijili",href:"https://linkedin.com/in/koushikbijili",ev:"linkedin_click"},
+    {l:"GitHub",v:"koushikbijili",href:"https://github.com/koushikbijili",ev:"github_click"},
+    {l:"Location",v:"Hyderabad, Telangana",href:"#",ev:null},
   ];
   return(
     <section id="contact" style={{padding:"8rem clamp(1.5rem,4vw,3rem) 6rem",background:BG0,position:"relative",overflow:"hidden"}}>
@@ -656,14 +659,15 @@ function Contact() {
             <SL tag="07 — Contact" title="Get in Touch"/>
             <p style={{fontFamily:SANS,fontSize:".92rem",lineHeight:1.85,color:FG2,marginBottom:"1.5rem"}}>Open to Cloud and DevOps roles focused on infrastructure, automation, and reliability. Feel free to reach out via email or LinkedIn to connect.</p>
             <div style={{display:"flex",gap:".7rem"}}>
-              <a href="mailto:koushikbijili48@gmail.com" style={{fontFamily:SANS,fontSize:".82rem",fontWeight:600,color:"#fff",background:V,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s",display:"inline-block"}} onMouseEnter={e=>{e.currentTarget.style.opacity=".85";e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>Send Email</a>
-              <a href="https://linkedin.com/in/koushikbijili" target="_blank" rel="noreferrer" style={{fontFamily:SANS,fontSize:".82rem",fontWeight:500,color:FG2,border:`1px solid ${BD}`,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s",display:"inline-block"}} onMouseEnter={e=>{e.currentTarget.style.color=FG;e.currentTarget.style.borderColor=BDH;}} onMouseLeave={e=>{e.currentTarget.style.color=FG2;e.currentTarget.style.borderColor=BD;}}>LinkedIn →</a>
+              <a href="mailto:koushikbijili48@gmail.com" onClick={()=>trackEvent('hire_click')} style={{fontFamily:SANS,fontSize:".82rem",fontWeight:600,color:"#fff",background:V,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s",display:"inline-block"}} onMouseEnter={e=>{e.currentTarget.style.opacity=".85";e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>Send Email</a>
+              <a href="https://linkedin.com/in/koushikbijili" target="_blank" rel="noreferrer" onClick={()=>trackEvent('linkedin_click')} style={{fontFamily:SANS,fontSize:".82rem",fontWeight:500,color:FG2,border:`1px solid ${BD}`,textDecoration:"none",padding:"10px 22px",borderRadius:8,transition:"all .25s",display:"inline-block"}} onMouseEnter={e=>{e.currentTarget.style.color=FG;e.currentTarget.style.borderColor=BDH;}} onMouseLeave={e=>{e.currentTarget.style.color=FG2;e.currentTarget.style.borderColor=BD;}}>LinkedIn →</a>
             </div>
           </Reveal>
           <div style={{display:"flex",flexDirection:"column",gap:".65rem"}}>
             {contacts.map((c,i)=>(
               <Reveal key={i} delay={i*55}>
                 <a href={c.href} target={c.href.startsWith("http")?"_blank":undefined} rel="noreferrer"
+                  onClick={()=>c.ev && trackEvent(c.ev)}
                   style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.4rem",background:BG1,border:`1px solid ${BD}`,borderRadius:8,textDecoration:"none",transition:"all .25s",gap:"1rem"}}
                   onMouseEnter={e=>{e.currentTarget.style.borderColor=BDH;e.currentTarget.style.background=V1;}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor=BD;e.currentTarget.style.background=BG1;}}>
@@ -678,8 +682,8 @@ function Contact() {
         <div style={{marginTop:"5rem",paddingTop:"2rem",borderTop:`1px solid ${BD}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"1rem"}}>
           <span style={{fontFamily:MONO,fontSize:".58rem",color:FG3,letterSpacing:".08em"}}>KB. · Cloud & DevOps Engineer · {new Date().getFullYear()}</span>
           <div style={{display:"flex",gap:"1.5rem"}}>
-            {[{l:"LinkedIn",u:"https://linkedin.com/in/koushikbijili"},{l:"GitHub",u:"https://github.com/koushikbijili"}].map(s=>(
-              <a key={s.l} href={s.u} target="_blank" rel="noreferrer" style={{fontFamily:MONO,fontSize:".58rem",color:FG3,textDecoration:"none",letterSpacing:".08em",textTransform:"uppercase",transition:"color .25s"}} onMouseEnter={e=>e.target.style.color=FG} onMouseLeave={e=>e.target.style.color=FG3}>{s.l}</a>
+            {[{l:"LinkedIn",u:"https://linkedin.com/in/koushikbijili",ev:"linkedin_click"},{l:"GitHub",u:"https://github.com/koushikbijili",ev:"github_click"}].map(s=>(
+              <a key={s.l} href={s.u} target="_blank" rel="noreferrer" onClick={()=>trackEvent(s.ev)} style={{fontFamily:MONO,fontSize:".58rem",color:FG3,textDecoration:"none",letterSpacing:".08em",textTransform:"uppercase",transition:"color .25s"}} onMouseEnter={e=>e.target.style.color=FG} onMouseLeave={e=>e.target.style.color=FG3}>{s.l}</a>
             ))}
           </div>
         </div>
